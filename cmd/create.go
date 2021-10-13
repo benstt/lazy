@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	// "os/exec"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -57,17 +57,19 @@ func createFile(name string, open bool) error {
 
 	fmt.Printf("File created at %s\n", file)
 
-	// TODO: handle open flag
-	// if open {
-	// 	cmd := exec.Command("cmd", file)
-	// 	err = cmd.Start()
-	// 	if err != nil {
-	// 		fmt.Printf("Start failed: %s", err)
-	// 	}
-	// 	fmt.Printf("Waiting for command to finish.\n")
-	// 	err = cmd.Wait()
-	// 	fmt.Printf("Command finished with error: %v\n", err)
-	// }
+	// TODO: set this to use vim or user's preferred text editor
+	// as of 13/10/21 only works with notepad.
+	if open {
+		exepath := "C:\\Windows\\system32\\notepad.exe"
+		cmd := exec.Command(exepath, file)
+		err = cmd.Start()
+		if err != nil {
+			fmt.Printf("Start failed: %s", err)
+		}
+		fmt.Printf("Waiting for command to finish.\n")
+		err = cmd.Wait()
+		fmt.Printf("Command finished with error: %v\n", err)
+	}
 
 	return nil
 }
@@ -75,6 +77,7 @@ func createFile(name string, open bool) error {
 /* Create a directory with the name of the extension followed by a '_projects' */
 func createDir(name string) string {
 	dot := getExtensionIndex(name)
+	// TODO: change path as this only works on local computer
 	path := "H:/code/" + name[dot+1:] + "_projects/"
 
 	// check if path exists
