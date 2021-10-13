@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	// "os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
