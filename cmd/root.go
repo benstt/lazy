@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 Benjamín García Roqués <benjamingarciaroques@gmail.com>
+Copyright © 2021 Benjamin Garcia Roques <benjamingarciaroques@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,17 +17,18 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"github.com/spf13/cobra"
 
 	"github.com/spf13/viper"
 )
 
 var cfgFile string
 
+// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "lazy",
-	Short: "Lazy is a CLI app that lets you manipulate files easily",
+	Short: "Lazy is an application that lets you manipulate programming files easily.",
 }
 
 func Execute() {

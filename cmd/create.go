@@ -20,21 +20,31 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+    "path/filepath"
+    "runtime"
 
 	"github.com/spf13/cobra"
 )
 
 var createCmd = &cobra.Command{
-	Use:   "create",
+    Use:   "create FILE1 [FILE2...]",
 	Short: "Create a file",
 	Long:  `Create a file in a new directory with the name of the extension, or adding to it if it was already created.`,
+    Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, f := range args {
 			open, err := cmd.Flags().GetBool("open")
 			if err != nil {
 				panic(err)
 			}
-			createFile(f, open)
+
+            // make sure the file has an extension
+            if err := getExtensionIndex(f); err != -1 {
+                createFile(f, open)
+            } else {
+                fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
+                return
+            }
 		}
 	},
 }
@@ -48,37 +58,44 @@ func init() {
 /* Creates a file and opens it if the flag is true */
 func createFile(name string, open bool) error {
 	dir := createDir(name)
-	file := dir + name
+	file := dir + name // append the name of the file to the directory
 
 	err := os.WriteFile(file, nil, 0644)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("File created at %s\n", file)
-
-	// TODO: set this to use vim or user's preferred text editor
-	// as of 13/10/21 only works with notepad.
+    // if flag -o, open the file
 	if open {
-		exepath := "C:\\Windows\\system32\\notepad.exe"
-		cmd := exec.Command(exepath, file)
-		err = cmd.Start()
-		if err != nil {
-			fmt.Printf("Start failed: %s", err)
-		}
-		fmt.Printf("Waiting for command to finish.\n")
-		err = cmd.Wait()
-		fmt.Printf("Command finished with error: %v\n", err)
+        // set variables for bash script
+        os.Setenv("PROYECT_PATH", dir)
+        os.Setenv("PROYECT", name)
+
+        // get root directory of the project
+        basepath := getBasePath()
+
+        // execute bash script
+        cmd := exec.Command("/bin/bash", basepath + "/scripts/open_dir.sh")
+        cmd.Stdin = os.Stdin
+        cmd.Stdout = os.Stdout
+        err := cmd.Run()
+        if err != nil {
+            fmt.Printf("Start failed: %s\n", err)
+        }
 	}
+
+	fmt.Printf("File created at %s\n", file)
 
 	return nil
 }
 
-/* Create a directory with the name of the extension followed by a '_projects' */
+/* Create a directory with the name of the extension followed by '_projects' */
 func createDir(name string) string {
 	dot := getExtensionIndex(name)
-	// TODO: change path as this only works on local computer
-	path := "H:/code/" + name[dot+1:] + "_projects/"
+    basepath := getBasePath() // get root path of this file (cmd)
+
+    // get the root path of the lazy directory and append the new name to it
+	path := basepath + "/../" + name[dot+1:] + "_projects/"
 
 	// check if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -87,6 +104,8 @@ func createDir(name string) string {
 			panic(err)
 		}
 	}
+    // clean up path for simplicity
+    path = filepath.Dir(path) + "/"
 
 	return path
 }
@@ -94,6 +113,13 @@ func createDir(name string) string {
 /* Get position of the dot in the extension */
 func getExtensionIndex(filepath string) int {
 	dot := strings.Index(filepath, ".")
-
 	return dot
+}
+
+/* Get root directory of the file */
+func getBasePath() string {
+    _, b, _, _ := runtime.Caller(0)
+    basepath   := filepath.Join(filepath.Dir(b), "..")
+
+    return basepath
 }
