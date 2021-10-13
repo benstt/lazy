@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -57,6 +58,16 @@ func createFile(name string, open bool) error {
 	fmt.Printf("File created at %s\n", file)
 
 	// TODO: handle open flag
+	// if open {
+	// 	cmd := exec.Command("cmd", file)
+	// 	err = cmd.Start()
+	// 	if err != nil {
+	// 		fmt.Printf("Start failed: %s", err)
+	// 	}
+	// 	fmt.Printf("Waiting for command to finish.\n")
+	// 	err = cmd.Wait()
+	// 	fmt.Printf("Command finished with error: %v\n", err)
+	// }
 
 	return nil
 }
