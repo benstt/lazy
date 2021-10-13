@@ -19,18 +19,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
-    "path/filepath"
-    "runtime"
 
 	"github.com/spf13/cobra"
 )
 
 var createCmd = &cobra.Command{
-    Use:   "create FILE1 [FILE2...]",
+	Use:   "create FILE1 [FILE2...]",
 	Short: "Create a file",
 	Long:  `Create a file in a new directory with the name of the extension, or adding to it if it was already created.`,
-    Args: cobra.MinimumNArgs(1),
+	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		for _, f := range args {
 			open, err := cmd.Flags().GetBool("open")
@@ -38,13 +38,13 @@ var createCmd = &cobra.Command{
 				panic(err)
 			}
 
-            // make sure the file has an extension
-            if err := getExtensionIndex(f); err != -1 {
-                createFile(f, open)
-            } else {
-                fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
-                return
-            }
+			// make sure the file has an extension
+			if err := getExtensionIndex(f); err != -1 {
+				createFile(f, open)
+			} else {
+				fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
+				return
+			}
 		}
 	},
 }
@@ -65,23 +65,23 @@ func createFile(name string, open bool) error {
 		return err
 	}
 
-    // if flag -o, open the file
+	// if flag -o, open the file
 	if open {
-        // set variables for bash script
-        os.Setenv("PROYECT_PATH", dir)
-        os.Setenv("PROYECT", name)
+		// set variables for bash script
+		os.Setenv("PROYECT_PATH", dir)
+		os.Setenv("PROYECT", name)
 
-        // get root directory of the project
-        basepath := getBasePath()
+		// get root directory of the project
+		basepath := getBasePath()
 
-        // execute bash script
-        cmd := exec.Command("/bin/bash", basepath + "/scripts/open_dir.sh")
-        cmd.Stdin = os.Stdin
-        cmd.Stdout = os.Stdout
-        err := cmd.Run()
-        if err != nil {
-            fmt.Printf("Start failed: %s\n", err)
-        }
+		// execute bash script
+		cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("Start failed: %s\n", err)
+		}
 	}
 
 	fmt.Printf("File created at %s\n", file)
@@ -92,9 +92,9 @@ func createFile(name string, open bool) error {
 /* Create a directory with the name of the extension followed by '_projects' */
 func createDir(name string) string {
 	dot := getExtensionIndex(name)
-    basepath := getBasePath() // get root path of this file (cmd)
+	basepath := getBasePath() // get root path of this file (cmd)
 
-    // get the root path of the lazy directory and append the new name to it
+	// get the root path of the lazy directory and append the new name to it
 	path := basepath + "/../" + name[dot+1:] + "_projects/"
 
 	// check if path exists
@@ -104,8 +104,8 @@ func createDir(name string) string {
 			panic(err)
 		}
 	}
-    // clean up path for simplicity
-    path = filepath.Dir(path) + "/"
+	// clean up path for simplicity
+	path = filepath.Dir(path) + "/"
 
 	return path
 }
@@ -118,8 +118,8 @@ func getExtensionIndex(filepath string) int {
 
 /* Get root directory of the file */
 func getBasePath() string {
-    _, b, _, _ := runtime.Caller(0)
-    basepath   := filepath.Join(filepath.Dir(b), "..")
+	_, b, _, _ := runtime.Caller(0)
+	basepath := filepath.Join(filepath.Dir(b), "..")
 
-    return basepath
+	return basepath
 }
