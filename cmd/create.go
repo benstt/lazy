@@ -97,24 +97,23 @@ func createFile(name string, open bool, withTerminal bool) error {
 
 	// if flag -o or -t, open the file
 	if open {
-		if withTerminal { // -t
-			// set variables for bash script
-			os.Setenv("PROYECT_PATH", dir)
-			os.Setenv("PROYECT", name)
+		// run with the os preferred app
+		op.Run(file)
+	} else if withTerminal {
+		// set variables for bash script
+		os.Setenv("PROYECT_PATH", dir)
+		os.Setenv("PROYECT", name)
 
-			// get root directory of the project
-			basepath := getBasePath()
-			// execute bash script
-			cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			err := cmd.Run()
-			if err != nil {
-				fmt.Printf("Start failed: %s\n", err)
-			}
-		} else {
-			// run with the os preferred app
-			op.Run(file)
+		// get root directory of the project
+		basepath := getBasePath()
+		// execute bash script
+		cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+
+		err := cmd.Run()
+		if err != nil {
+			fmt.Printf("Start failed: %s\n", err)
 		}
 	}
 
