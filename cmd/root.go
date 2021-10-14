@@ -1,5 +1,5 @@
 /*
-Copyright © 2021 Benjamin Garcia Roques <benjamingarciaroques@gmail.com>
+Copyright © 2021 Benjamín García Roqués <benjamingarciaroques@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

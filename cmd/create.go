@@ -23,40 +23,70 @@ import (
 	"runtime"
 	"strings"
 
+	op "github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
 )
 
 var createCmd = &cobra.Command{
 	Use:   "create FILE1 [FILE2...]",
 	Short: "Create a file",
-	Long:  `Create a file in a new directory with the name of the extension, or adding to it if it was already created.`,
-	Args:  cobra.MinimumNArgs(1),
+	Long: `Create a file in a new directory with the name of the extension, or adding to it if it was already created. 
+If both flags -o and -t are given, the operating system will open the file with the OS preferred application.`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		for _, f := range args {
-			open, err := cmd.Flags().GetBool("open")
-			if err != nil {
-				panic(err)
+		/* returns if the file has an extension or not */
+		hasExtension := func(f string) bool {
+			if err := getExtensionIndex(f); err != -1 {
+				return true
 			}
 
-			// make sure the file has an extension
-			if err := getExtensionIndex(f); err != -1 {
-				createFile(f, open)
+			return false
+		}
+
+		if len(args) > 1 {
+			for _, f := range args {
+				// make sure the file has an extension
+				if hasExtension(f) {
+					createFile(f, false, false)
+				} else {
+					fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
+					return
+				}
+			}
+		} else {
+			/* returns the value of the given flag */
+			getFlag := func(f string) bool {
+				flag, err := cmd.Flags().GetBool(f)
+				if err != nil {
+					panic(err)
+				}
+
+				return flag
+			}
+
+			open := getFlag("open")
+			terminal := getFlag("open-in-terminal")
+
+			if hasExtension(args[0]) {
+				createFile(args[0], open, terminal)
 			} else {
 				fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
 				return
 			}
 		}
+
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(createCmd)
 
-	createCmd.Flags().BoolP("open", "o", false, "open the file after creating it")
+	createCmd.Flags().BoolP("open", "o", false, "open the file after creating it, with the OS preferred application")
+	createCmd.Flags().BoolP("open-in-terminal", "t", false, "open the file after creating it, on the current terminal")
 }
 
 /* Creates a file and opens it if the flag is true */
-func createFile(name string, open bool) error {
+func createFile(name string, open bool, withTerminal bool) error {
 	dir := createDir(name)
 	file := dir + name // append the name of the file to the directory
 
@@ -65,22 +95,26 @@ func createFile(name string, open bool) error {
 		return err
 	}
 
-	// if flag -o, open the file
+	// if flag -o or -t, open the file
 	if open {
-		// set variables for bash script
-		os.Setenv("PROYECT_PATH", dir)
-		os.Setenv("PROYECT", name)
+		if withTerminal { // -t
+			// set variables for bash script
+			os.Setenv("PROYECT_PATH", dir)
+			os.Setenv("PROYECT", name)
 
-		// get root directory of the project
-		basepath := getBasePath()
-
-		// execute bash script
-		cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		err := cmd.Run()
-		if err != nil {
-			fmt.Printf("Start failed: %s\n", err)
+			// get root directory of the project
+			basepath := getBasePath()
+			// execute bash script
+			cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			err := cmd.Run()
+			if err != nil {
+				fmt.Printf("Start failed: %s\n", err)
+			}
+		} else {
+			// run with the os preferred app
+			op.Run(file)
 		}
 	}
 
