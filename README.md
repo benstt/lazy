@@ -11,9 +11,9 @@ Add $GOPATH to $PATH, if you haven't already:
 ```
 
 Then simply run
-``
+```
 go get github.com/grbenjamin/lazy
-``
+```
 
 ## Use
 
