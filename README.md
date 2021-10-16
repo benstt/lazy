@@ -2,7 +2,7 @@
 Simple CLI tool to easily create/manipulate programming files.
 
 ## Requirements
-[Go](https://golang.org/dl/)
+[Go 1.17+](https://golang.org/dl/)
 
 ## Setup
 Add $GOPATH to $PATH, if you haven't already:
