@@ -34,22 +34,16 @@ var createCmd = &cobra.Command{
 If both flags -o and -t are given, the operating system will open the file with the OS preferred application.`,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		/* returns if the file has an extension or not */
-		hasExtension := func(f string) bool {
-			if err := getExtensionIndex(f); err != -1 {
-				return true
-			}
-
-			return false
-		}
-
 		if len(args) > 1 {
 			for _, f := range args {
 				// make sure the file has an extension
 				if hasExtension(f) {
-					createFile(f, false, false)
+					err := createFile(f, false, false)
+					if err != nil {
+						panic(err)
+					}
 				} else {
-					fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
+					fmt.Printf("File %s doesn't have an extension. Example of use: lazy create -o myproject.go", f)
 					return
 				}
 			}
@@ -64,17 +58,20 @@ If both flags -o and -t are given, the operating system will open the file with 
 				return flag
 			}
 
+			// check for flags -o and -t
 			open := getFlag("open")
 			terminal := getFlag("open-in-terminal")
 
 			if hasExtension(args[0]) {
-				createFile(args[0], open, terminal)
+				err := createFile(args[0], open, terminal)
+				if err != nil {
+					panic(err)
+				}
 			} else {
 				fmt.Println("The file must have an extension. Example: lazy create -o myproject.go")
 				return
 			}
 		}
-
 	},
 }
 
@@ -99,14 +96,14 @@ func createFile(name string, open bool, withTerminal bool) error {
 	if open {
 		// run with the os preferred app
 		op.Run(file)
-	} else if withTerminal {
+	} else if withTerminal || (withTerminal && runtime.GOOS == "windows") {
 		// set variables for bash script
 		os.Setenv("PROYECT_PATH", dir)
 		os.Setenv("PROYECT", name)
 
 		// get root directory of the project
 		basepath := getBasePath()
-		// execute bash script
+		// execute script
 		cmd := exec.Command("/bin/bash", basepath+"/scripts/open_dir.sh")
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
@@ -125,10 +122,14 @@ func createFile(name string, open bool, withTerminal bool) error {
 /* Create a directory with the name of the extension followed by '_projects' */
 func createDir(name string) string {
 	dot := getExtensionIndex(name)
-	basepath := getBasePath() // get root path of this file (cmd)
 
-	// get the root path of the lazy directory and append the new name to it
-	path := basepath + "/../" + name[dot+1:] + "_projects/"
+	var path string
+	if runtime.GOOS == "windows" {
+		path = "H:\\code\\" + name[dot+1:] + "_projects\\"
+	} else {
+		// get the documents path and append the new name to it
+		path = "~/Documents/" + name[dot+1:] + "_projects/"
+	}
 
 	// check if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -137,8 +138,6 @@ func createDir(name string) string {
 			panic(err)
 		}
 	}
-	// clean up path for simplicity
-	path = filepath.Dir(path) + "/"
 
 	return path
 }
@@ -146,7 +145,16 @@ func createDir(name string) string {
 /* Get position of the dot in the extension */
 func getExtensionIndex(filepath string) int {
 	dot := strings.Index(filepath, ".")
-	return dot
+	index := dot
+
+	hasMoreThanOneDot := strings.Count(filepath, string(filepath[dot])) > 1
+	if hasMoreThanOneDot {
+		// get the index of the other dot and add to the total index count
+		dot = getExtensionIndex(filepath[dot+1:])
+		index += dot
+	}
+
+	return index
 }
 
 /* Get root directory of the file */
@@ -155,4 +163,13 @@ func getBasePath() string {
 	basepath := filepath.Join(filepath.Dir(b), "..")
 
 	return basepath
+}
+
+/* returns if the file has an extension or not */
+func hasExtension(f string) bool {
+	if err := getExtensionIndex(f); err != -1 {
+		return true
+	}
+
+	return false
 }
