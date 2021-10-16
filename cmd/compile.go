@@ -27,51 +27,18 @@ import (
 )
 
 var compileCmd = &cobra.Command{
-	Use:   "compile",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "compile FILE1.x [FILE2.x [FILE3.x]]...",
+	Short: "Compile a file",
+	Long: `Compile a given C, C++ or Java file, whether or not it is located on the current directory.
+The output will be stored in the file's project folder.`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) > 1 {
 			for _, f := range args {
-				// make sure the file has an extension
-				if hasExtension(f) {
-					path, err := searchFileAndCompile(f)
-					if err != nil {
-						panic(err)
-					}
-
-					if path != "" {
-						fmt.Printf("File %s compiled. Output located in %s\n", args[0], path)
-					} else {
-						fmt.Printf("Couldn't find source file %s. Please try again.\n", args[0])
-					}
-				} else {
-					fmt.Printf("File %s doesn't have an extension. Example of use: lazy compile myproject.c", f)
-					return
-				}
+				checkAndRunCompile(f)
 			}
 		} else {
-			// make sure the file has an extension
-			if hasExtension(args[0]) {
-				path, err := searchFileAndCompile(args[0])
-				if err != nil {
-					panic(err)
-				}
-
-				if path != "" {
-					fmt.Printf("File %s compiled. Output located in %s\n", args[0], path)
-				} else {
-					fmt.Printf("Couldn't find source file %s. Please try again.\n", args[0])
-				}
-			} else {
-				fmt.Println("The file must have an extension. Example: lazy compile myproject.c")
-				return
-			}
+			checkAndRunCompile(args[0])
 		}
 	},
 }
@@ -80,7 +47,27 @@ func init() {
 	rootCmd.AddCommand(compileCmd)
 }
 
-/* Searchs for a file and compiles it if exists */
+// checkAndRunCompile checks for errors and compile if there's none
+func checkAndRunCompile(file string) {
+	// the file must have an extension
+	if hasExtension(file) {
+		path, err := searchFileAndCompile(file)
+		if err != nil {
+			panic(err)
+		}
+
+		if path != "" {
+			fmt.Printf("File %s compiled. Output located in %s\n", file, path)
+		} else {
+			fmt.Printf("Couldn't find source file %s. Please try again.\n", file)
+		}
+	} else {
+		fmt.Println("The file must have an extension. Example: lazy compile myproject.c")
+		return
+	}
+}
+
+// searchFileAndCompile searchs for a file and compiles it if exists. Returns the output path of the .out and an error if any.
 func searchFileAndCompile(file string) (string, error) {
 	dir := getDir(file)
 
@@ -116,11 +103,13 @@ func searchFileAndCompile(file string) (string, error) {
 	return outputPath, err
 }
 
-/* Compiles the file given */
+// compile compiles the file given with the output name of the out parameter and returns an error on failure.
+//
+// compile uses GCC for C compiling, G++ for C++ compiling and Javac for Java compiling.
 func compile(file string, out string) error {
 	lang := detectLanguage(file)
 
-	// runs the compiler on terminal
+	// run the compiler on terminal
 	var cmd *exec.Cmd
 	switch lang {
 	case "C++":
@@ -144,9 +133,11 @@ func compile(file string, out string) error {
 	return nil
 }
 
-/* Detects the language of given file
-For now this only applies for CPP, Java and C files
-*/
+// detectLanguage detects the programming language of given file and returns the name of it.
+//
+// If the language is not found, it returns "".
+//
+// * For now this only applies for CPP, Java and C files. *
 func detectLanguage(file string) string {
 	languages := map[string]string{
 		".cpp":  "C++",
@@ -166,7 +157,11 @@ func detectLanguage(file string) string {
 	return ""
 }
 
-/* Gets the .out name of the file as an abbreviation of the original */
+// getOutputName gets the .out name of the file as an abbreviation of the original.
+//
+// If the file string is in the form of "ejercicioX.y", it will return it in format "ejerX" (without extension).
+// If the file contains an underscore, it will return a slice until that underscore.
+// Else it will return a slice of the string until a dot (".").
 func getOutputName(file string) string {
 	/* Gets the substr until the given char */
 	name := func(f string, char string) string {
