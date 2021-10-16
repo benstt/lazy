@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -123,12 +124,15 @@ func createFile(name string, open bool, withTerminal bool) error {
 func createDir(name string) string {
 	dot := getExtensionIndex(name)
 
+	usr, _ := user.Current()
+	dir := usr.HomeDir
+
 	var path string
 	if runtime.GOOS == "windows" {
 		path = "H:\\code\\" + name[dot+1:] + "_projects\\"
 	} else {
 		// get the documents path and append the new name to it
-		path = "~/Documents/" + name[dot+1:] + "_projects/"
+		path = filepath.Join(dir, "Documents", name[dot+1:]+"_projects")
 	}
 
 	// check if path exists
