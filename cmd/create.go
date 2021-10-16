@@ -120,8 +120,7 @@ func createFile(name string, open bool, withTerminal bool) error {
 	return nil
 }
 
-/* Create a directory with the name of the extension followed by '_projects' */
-func createDir(name string) string {
+func getDir(name string) string {
 	dot := getExtensionIndex(name)
 
 	usr, _ := user.Current()
@@ -132,8 +131,15 @@ func createDir(name string) string {
 		path = "H:\\code\\" + name[dot+1:] + "_projects\\"
 	} else {
 		// get the documents path and append the new name to it
-		path = filepath.Join(dir, "Documents", name[dot+1:]+"_projects")
+		path = filepath.Join(dir, "Documents", name[dot+1:]+"_projects") + "/"
 	}
+
+	return path
+}
+
+/* Create a directory with the name of the extension followed by '_projects' */
+func createDir(name string) string {
+	path := getDir(name)
 
 	// check if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {

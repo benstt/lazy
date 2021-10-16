@@ -17,8 +17,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -38,9 +40,15 @@ to quickly create a Cobra application.`,
 			for _, f := range args {
 				// make sure the file has an extension
 				if hasExtension(f) {
-					err := compile(f)
+					path, err := searchFileAndCompile(f)
 					if err != nil {
 						panic(err)
+					}
+
+					if path != "" {
+						fmt.Printf("File %s compiled. Output located in %s\n", args[0], path)
+					} else {
+						fmt.Printf("Couldn't find source file %s. Please try again.\n", args[0])
 					}
 				} else {
 					fmt.Printf("File %s doesn't have an extension. Example of use: lazy compile myproject.c", f)
@@ -50,9 +58,15 @@ to quickly create a Cobra application.`,
 		} else {
 			// make sure the file has an extension
 			if hasExtension(args[0]) {
-				err := compile(args[0])
+				path, err := searchFileAndCompile(args[0])
 				if err != nil {
 					panic(err)
+				}
+
+				if path != "" {
+					fmt.Printf("File %s compiled. Output located in %s\n", args[0], path)
+				} else {
+					fmt.Printf("Couldn't find source file %s. Please try again.\n", args[0])
 				}
 			} else {
 				fmt.Println("The file must have an extension. Example: lazy compile myproject.c")
@@ -66,23 +80,60 @@ func init() {
 	rootCmd.AddCommand(compileCmd)
 }
 
+/* Searchs for a file and compiles it if exists */
+func searchFileAndCompile(file string) (string, error) {
+	dir := getDir(file)
+
+	var outputPath string
+	// go for every file and subdirectory of the root file dir
+	e := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info.Mode().IsRegular() && info.Name() == file {
+			// file exists
+			outputPath = filepath.Dir(path)
+			outName := getOutputName(file)
+			os.Chdir(outputPath) // change dir to compile in the project dir
+
+			if err := compile(path, outName); err != nil {
+				fmt.Printf("Could not compile file %s\n", path)
+				return err
+			}
+
+			return nil
+		}
+
+		return nil
+	})
+
+	if e != nil {
+		panic(e)
+	}
+
+	_, err := filepath.Abs(file)
+	return outputPath, err
+}
+
 /* Compiles the file given */
-func compile(file string) error {
+func compile(file string, out string) error {
 	lang := detectLanguage(file)
 
 	// runs the compiler on terminal
 	var cmd *exec.Cmd
 	switch lang {
 	case "C++":
-		cmd = exec.Command("g++", file, "-o", getOutputName(file)+".o")
+		cmd = exec.Command("g++", file, "-o", out+".o")
 	case "Java":
 		cmd = exec.Command("javac", file)
 	case "C":
-		cmd = exec.Command("gcc", file, "-o", getOutputName(file)+".o")
+		cmd = exec.Command("gcc", file, "-o", out+".o")
 	}
 
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	err := cmd.Run()
 	if err != nil {
@@ -103,9 +154,11 @@ func detectLanguage(file string) string {
 		".c":    "C",
 	}
 
+	// get extension of the file
 	dot := getExtensionIndex(file)
 	ext := file[dot:]
 
+	// check if the extension is on the map and return the language
 	if val, ok := languages[ext]; ok {
 		return val
 	}
@@ -122,11 +175,15 @@ func getOutputName(file string) string {
 	}
 
 	if strings.HasPrefix(file, "ejercicio") {
+		dot := getExtensionIndex(file) // get until dot
+
 		// ejercicio1 --> ejer1
-		return file[:4] + string(file[9:])
+		return file[:4] + string(file[9:dot])
 	} else if strings.Contains(file, "_") {
 		return name(file, "_")
 	}
 
-	return file
+	out := name(file, ".")
+
+	return out
 }
