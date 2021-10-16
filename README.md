@@ -1,5 +1,5 @@
 # Lazymaker
-CLI tool to easily create/manipulate programming files.
+Simple CLI tool to easily create/manipulate programming files.
 
 ## Requirements
 [Go](https://golang.org/dl/)
@@ -19,6 +19,6 @@ go get github.com/grbenjamin/lazy
 
 Run `lazy help` to see all available commands.
 Examples:
-- ``lazy create myfile.cpp`` will create a directory called ``cpp_projects`` along with a file ``myfile.cpp``, on the current root directory.
+- ``lazy create myfile.rs`` will create a directory called ``rs_projects`` along with a file ``myfile.rs``, under `~/Documents/`.
 - ``lazy create -t program.go`` will create the file the same way as explained above, and opens it in the terminal (vim, vi, nano)
-- ``lazy create -o foo.rs`` will create the file and open it with the OS preferred application.
+- ``lazy compile foo.c`` will search for the file under `~/Documents/` and all subdirectories and compile it.
