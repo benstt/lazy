@@ -16,9 +16,14 @@ go get github.com/grbenjamin/lazy
 ```
 
 ## Use
+### Available commands
+You can use three different commands:
+- ``lazy create``: creates a file.
+- ``lazy compile``: compiles a file.
+- ``lazy run``: runs a file.
+Run `lazy help` for help of any command.
 
-Run `lazy help` to see all available commands.
 Examples:
-- ``lazy create myfile.rs`` will create a directory called ``rs_projects`` along with a file ``myfile.rs``, under `~/Documents/`.
-- ``lazy create -t program.go`` will create the file the same way as explained above, and opens it in the terminal (vim, vi, nano)
-- ``lazy compile foo.c`` will search for the file under `~/Documents/` and all subdirectories and compile it.
+- ``lazy create -t myfile.rs`` will create a directory called ``rs_projects`` along with a file ``myfile.rs`` under `~/Documents/`, and open it with the terminal.
+- ``lazy compile program.c otherfile.cpp`` will search for each file under the ``~/Documents/`` directory and all subdirectories and compile them.
+- ``lazy run foo.c`` will search for the file under `~/Documents/` and all subdirectories and run it. If the file is not compiled yet, it will do so and then run it.
