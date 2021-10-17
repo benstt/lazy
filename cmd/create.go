@@ -111,7 +111,7 @@ func createFile(name string, open bool, withTerminal bool) error {
 
 		err := cmd.Run()
 		if err != nil {
-			fmt.Printf("Start failed: %s\n", err)
+			fmt.Printf("Create exec failed: %s\n", err)
 		}
 	}
 

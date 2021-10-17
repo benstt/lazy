@@ -47,31 +47,41 @@ func init() {
 	rootCmd.AddCommand(compileCmd)
 }
 
-// checkAndRunCompile checks for errors and compile if there's none
+// checkAndRunCompile checks for errors and compile if there's none.
 func checkAndRunCompile(file string) {
 	// the file must have an extension
 	if hasExtension(file) {
-		path, err := searchFileAndCompile(file)
+		filePath, rootPath, err := searchFile(file)
 		if err != nil {
 			panic(err)
 		}
 
-		if path != "" {
-			fmt.Printf("File %s compiled. Output located in %s\n", file, path)
-		} else {
+		if filePath == "" {
 			fmt.Printf("Couldn't find source file %s. Please try again.\n", file)
+			return
 		}
+
+		outName := getOutputName(file)
+		os.Chdir(rootPath) // change dir to compile in the project dir
+
+		if err := compile(filePath, outName); err != nil {
+			fmt.Printf("Could not compile file %s\n", filePath)
+			panic(err)
+		}
+
+		fmt.Printf("File %s compiled. Output located in %s\n", file, rootPath)
 	} else {
 		fmt.Println("The file must have an extension. Example: lazy compile myproject.c")
 		return
 	}
 }
 
-// searchFileAndCompile searchs for a file and compiles it if exists. Returns the output path of the .out and an error if any.
-func searchFileAndCompile(file string) (string, error) {
+// searchFile searchs for a file and returns the path and its root path, along with an error if any.
+func searchFile(file string) (string, string, error) {
 	dir := getDir(file)
 
-	var outputPath string
+	var filePath string
+	var rootPath string
 	// go for every file and subdirectory of the root file dir
 	e := filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -80,14 +90,8 @@ func searchFileAndCompile(file string) (string, error) {
 
 		if info.Mode().IsRegular() && info.Name() == file {
 			// file exists
-			outputPath = filepath.Dir(path)
-			outName := getOutputName(file)
-			os.Chdir(outputPath) // change dir to compile in the project dir
-
-			if err := compile(path, outName); err != nil {
-				fmt.Printf("Could not compile file %s\n", path)
-				return err
-			}
+			filePath = path
+			rootPath = filepath.Dir(path)
 
 			return nil
 		}
@@ -95,12 +99,7 @@ func searchFileAndCompile(file string) (string, error) {
 		return nil
 	})
 
-	if e != nil {
-		panic(e)
-	}
-
-	_, err := filepath.Abs(file)
-	return outputPath, err
+	return filePath, rootPath, e
 }
 
 // compile compiles the file given with the output name of the out parameter and returns an error on failure.
@@ -126,7 +125,7 @@ func compile(file string, out string) error {
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Start failed: %s\n", err)
+		fmt.Printf("Compiling exec failed: %s\n", err)
 		return err
 	}
 
