@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -125,12 +124,14 @@ func getDir(name string) string {
 	dot := getExtensionIndex(name)
 
 	// get the home dir ("~/") to append to it
-	usr, _ := user.Current()
-	dir := usr.HomeDir
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
 
 	var path string
 	if runtime.GOOS == "windows" {
-		path = "H:\\code\\" + name[dot+1:] + "_projects\\"
+		path = filepath.Join(dir, name[dot+1:]+"_projects") + "\\"
 	} else {
 		// get the documents path and append the new name to it
 		path = filepath.Join(dir, "Documents", name[dot+1:]+"_projects") + "/"

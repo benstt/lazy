@@ -26,7 +26,7 @@ import (
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "run FILE1.x",
 	Short: "Runs a file",
 	Long:  `Runs a file given. If it's not compiled, compiles it and then runs it.`,
 	Args:  cobra.ExactArgs(1),
@@ -53,13 +53,15 @@ func checkAndRun(file string) {
 			return
 		}
 
-		os.Chdir(rootPath)
-		if err := run(filePath); err != nil {
+		os.Chdir(rootPath) // run on the root dir of the file
+
+		toRun := filepath.Base(filePath) // get only the name of the file
+		if err := run(toRun); err != nil {
 			fmt.Printf("Could not run file %s\n", filePath)
 			panic(err)
 		}
 	} else {
-		fmt.Println("The file must have an extension. Example: lazy compile myproject.c")
+		fmt.Println("The file must have an extension. Example: lazy run myproject.c")
 		return
 	}
 }
@@ -71,12 +73,16 @@ func run(file string) error {
 	compiled, outPath := isAlreadyCompiled(file)
 	if !compiled {
 		compile(file, outName)
+		outRoot := filepath.Dir(outPath)
 		// wait until it finishes compiling
 		for {
 			if _, err := os.Stat(outPath); !os.IsNotExist(err) {
+				// file created
 				break
 			}
 		}
+
+		fmt.Printf("File %s compiled. Output located in %s\n", file, outRoot)
 	}
 
 	// run the file
@@ -95,10 +101,11 @@ func run(file string) error {
 }
 
 // isAlreadyCompiled checks if the given file is already compiled by checking if exists .o files in the current directory.
+//
+// Additionally returns the output path (the path where it will be located if not compiled, or the actual path of the output).
 func isAlreadyCompiled(file string) (bool, string) {
-	dot := getExtensionIndex(file)
-	out := file[:dot] + ".o"
-	cwd, err := os.Getwd() // check in the current directory
+	out := getOutputName(file) + ".o"
+	cwd, err := os.Getwd() // check in the current directory of calling
 	if err != nil {
 		panic(err)
 	}

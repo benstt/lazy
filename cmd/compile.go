@@ -105,18 +105,18 @@ func searchFile(file string) (string, string, error) {
 // compile compiles the file given with the output name of the out parameter and returns an error on failure.
 //
 // compile uses GCC for C compiling, G++ for C++ compiling and Javac for Java compiling.
-func compile(file string, out string) error {
-	lang := detectLanguage(file)
+func compile(path string, out string) error {
+	lang := detectLanguage(path)
 
 	// run the compiler on terminal
 	var cmd *exec.Cmd
 	switch lang {
 	case "C++":
-		cmd = exec.Command("g++", file, "-o", out+".o")
+		cmd = exec.Command("g++", path, "-o", out+".o")
 	case "Java":
-		cmd = exec.Command("javac", file)
+		cmd = exec.Command("javac", path)
 	case "C":
-		cmd = exec.Command("gcc", file, "-o", out+".o")
+		cmd = exec.Command("gcc", path, "-o", out+".o")
 	}
 
 	cmd.Stdin = os.Stdin
