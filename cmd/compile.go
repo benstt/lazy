@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -78,7 +79,7 @@ func checkAndRunCompile(file string) {
 
 // searchFile searchs for a file and returns the path and its root path, along with an error if any.
 func searchFile(file string) (string, string, error) {
-	dir := getDir(file)
+	dir := getDirPath(file)
 
 	var filePath string
 	var rootPath string
@@ -108,6 +109,10 @@ func searchFile(file string) (string, string, error) {
 func compile(path string, out string) error {
 	lang := detectLanguage(path)
 
+	if lang == "" {
+		return errors.New("couldn't detect language from file")
+	}
+
 	// run the compiler on terminal
 	var cmd *exec.Cmd
 	switch lang {
@@ -125,11 +130,30 @@ func compile(path string, out string) error {
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Compiling exec failed: %s\n", err)
 		return err
 	}
 
 	return nil
+}
+
+// isAlreadyCompiled checks if the given file is already compiled by checking if exists .o files in the current directory.
+//
+// Additionally returns the output path (the path where it will be located if not compiled, or the actual path of the output).
+func isAlreadyCompiled(file string) (bool, string) {
+	out := getOutputName(file) + ".o"
+	cwd, err := os.Getwd() // check in the current directory of calling
+	if err != nil {
+		panic(err)
+	}
+
+	outPath := filepath.Join(cwd, out)
+
+	if _, err := os.Stat(outPath); !os.IsNotExist(err) {
+		// out exists
+		return true, outPath
+	}
+
+	return false, outPath
 }
 
 // detectLanguage detects the programming language of given file and returns the name of it.

@@ -17,8 +17,12 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+
+	"github.com/spf13/cobra"
 
 	"github.com/spf13/viper"
 )
@@ -64,4 +68,57 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+// getDir gets the directory name of the given name and returns it.
+func getDirPath(file string) string {
+	dot := getExtensionIndex(file)
+
+	// get the home dir ("~/") to append to it
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
+
+	var path string
+	if runtime.GOOS == "windows" {
+		path = filepath.Join(dir, file[dot+1:]+"_projects") + "\\"
+	} else {
+		// get the documents path and append the new name to it
+		path = filepath.Join(dir, "Documents", file[dot+1:]+"_projects") + "/"
+	}
+
+	return path
+}
+
+// getExtensionIndex gets position of the dot in the given filepath's extension.
+func getExtensionIndex(filepath string) int {
+	dot := strings.Index(filepath, ".")
+	index := dot
+
+	hasMoreThanOneDot := strings.Count(filepath, string(filepath[dot])) > 1
+	if hasMoreThanOneDot {
+		// get the index of the other dot and add to the total index count
+		dot = getExtensionIndex(filepath[dot+1:])
+		index += dot
+	}
+
+	return index
+}
+
+// getBasePath gets root directory of the file where it is called and returns the path to it.
+func getBasePath() string {
+	_, b, _, _ := runtime.Caller(0)
+	basepath := filepath.Join(filepath.Dir(b), "..")
+
+	return basepath
+}
+
+// hasExtension returns if the given file has an extension or not.
+func hasExtension(f string) bool {
+	if err := getExtensionIndex(f); err == -1 {
+		return false
+	}
+
+	return true
 }

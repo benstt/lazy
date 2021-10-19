@@ -19,9 +19,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	op "github.com/skratchdot/open-golang/open"
 	"github.com/spf13/cobra"
@@ -71,6 +69,7 @@ func checkAndRunCreate(file string, open, terminal bool) {
 	if hasExtension(file) {
 		err := createFile(file, open, terminal)
 		if err != nil {
+			fmt.Printf("Couldn't create file %s\n", file)
 			panic(err)
 		}
 	} else {
@@ -93,10 +92,10 @@ func createFile(name string, open bool, withTerminal bool) error {
 	}
 
 	// if flag -o or -t, open the file
-	if open {
+	if open || (withTerminal && runtime.GOOS == "windows") {
 		// run with the os preferred app
 		op.Run(file)
-	} else if withTerminal || (withTerminal && runtime.GOOS == "windows") {
+	} else if withTerminal {
 		// set variables for bash script
 		os.Setenv("PROYECT_PATH", dir)
 		os.Setenv("PROYECT", name)
@@ -110,7 +109,7 @@ func createFile(name string, open bool, withTerminal bool) error {
 
 		err := cmd.Run()
 		if err != nil {
-			fmt.Printf("Create exec failed: %s\n", err)
+			return err
 		}
 	}
 
@@ -119,30 +118,9 @@ func createFile(name string, open bool, withTerminal bool) error {
 	return nil
 }
 
-// getDir gets the directory name of the given name and returns it.
-func getDir(name string) string {
-	dot := getExtensionIndex(name)
-
-	// get the home dir ("~/") to append to it
-	dir, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-
-	var path string
-	if runtime.GOOS == "windows" {
-		path = filepath.Join(dir, name[dot+1:]+"_projects") + "\\"
-	} else {
-		// get the documents path and append the new name to it
-		path = filepath.Join(dir, "Documents", name[dot+1:]+"_projects") + "/"
-	}
-
-	return path
-}
-
 // createDir creates a directory with the name of the given file extension followed by '_projects' and returns its path.
 func createDir(name string) string {
-	path := getDir(name)
+	path := getDirPath(name)
 
 	// check if path exists
 	if _, err := os.Stat(path); os.IsNotExist(err) {
@@ -153,36 +131,4 @@ func createDir(name string) string {
 	}
 
 	return path
-}
-
-// getExtensionIndex gets position of the dot in the given filepath's extension.
-func getExtensionIndex(filepath string) int {
-	dot := strings.Index(filepath, ".")
-	index := dot
-
-	hasMoreThanOneDot := strings.Count(filepath, string(filepath[dot])) > 1
-	if hasMoreThanOneDot {
-		// get the index of the other dot and add to the total index count
-		dot = getExtensionIndex(filepath[dot+1:])
-		index += dot
-	}
-
-	return index
-}
-
-// getBasePath gets root directory of the file where it is called and returns the path to it.
-func getBasePath() string {
-	_, b, _, _ := runtime.Caller(0)
-	basepath := filepath.Join(filepath.Dir(b), "..")
-
-	return basepath
-}
-
-// hasExtension returns if the given file has an extension or not.
-func hasExtension(f string) bool {
-	if err := getExtensionIndex(f); err != -1 {
-		return true
-	}
-
-	return false
 }

@@ -26,9 +26,9 @@ import (
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run FILE1.x",
+	Use:   "run [FILE1.x]",
 	Short: "Runs a file",
-	Long:  `Runs a file given. If it's not compiled, compiles it and then runs it.`,
+	Long:  `Runs a file given, compiling it if is a source file.`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		checkAndRun(args[0])
@@ -40,7 +40,14 @@ func init() {
 }
 
 // checkAndRuns checks for errors and runs the file if none.
+//
+// It searches for the name of the file on the current directory and all subdirectories.
 func checkAndRun(file string) {
+	if file == "" {
+		fmt.Println("No file was given. Exiting.")
+		return
+	}
+
 	// make sure the file has an extension
 	if hasExtension(file) {
 		filePath, rootPath, err := searchFile(file)
@@ -93,29 +100,8 @@ func run(file string) error {
 
 	err := cmd.Run()
 	if err != nil {
-		fmt.Printf("Run exec failed: %s\n", err)
 		return err
 	}
 
 	return nil
-}
-
-// isAlreadyCompiled checks if the given file is already compiled by checking if exists .o files in the current directory.
-//
-// Additionally returns the output path (the path where it will be located if not compiled, or the actual path of the output).
-func isAlreadyCompiled(file string) (bool, string) {
-	out := getOutputName(file) + ".o"
-	cwd, err := os.Getwd() // check in the current directory of calling
-	if err != nil {
-		panic(err)
-	}
-
-	outPath := filepath.Join(cwd, out)
-
-	if _, err := os.Stat(outPath); !os.IsNotExist(err) {
-		// out exists
-		return true, outPath
-	}
-
-	return false, outPath
 }
