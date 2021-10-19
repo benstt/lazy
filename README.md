@@ -19,8 +19,9 @@ go get github.com/grbenjamin/lazy
 ### Available commands
 You can use three different commands:
 - ``lazy create``: creates a file.
-- ``lazy compile``: compiles a file.
+- ``lazy compile``: compiles a file. (For now only work on C, C++ and Java files)
 - ``lazy run``: runs a file.
+
 Run `lazy help` for help of any command.
 
 Examples:
